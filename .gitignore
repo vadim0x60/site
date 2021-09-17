@@ -1,0 +1,11 @@
+# IDEs
+.idea/
+
+# Hugo
+/resources/
+public/
+jsconfig.json
+node_modules/
+
+# Content will be pulled from a separate repository
+content
