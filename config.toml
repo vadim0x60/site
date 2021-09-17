@@ -12,8 +12,8 @@ pygmentscodefencesguesssyntax = true
 
 [params]
   author = "Vadim Liventsev"
-  info = "AI Developer"
-  description = "PhD @ TU/e & Philips"
+  info = ["AI Developer", "PhD @ TU/e & Philips"]
+  description = ""
   keywords = "blog,developer,personal"
   gravatar = "hi@vadim.me"
 
