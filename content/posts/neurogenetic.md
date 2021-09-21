@@ -5,24 +5,30 @@ author = "Vadim Liventsev"
 +++
 
 
-What's your favourite approach to gradient-free optimization? (You do have a favourite approach to gradient-free optimization, right?) Chances are that your answer is one of the following:
-* *Evolutionary algorithms*: simulated annealing or anything based on a "generate - mutate - crossover - select" loop
-* *Machine learning*: modeling the unknown function with a neural network or another machine learning model
+Let me start this essay, as one does on the internet, by polarising my audience
 
-I am here to make the case that a combination of the two is often desired.
+<iframe width="620" height="480" src="https://strawpoll.com/embed/3hh58szh9" style="width: 100%; height: 480px;" frameborder="0" allowfullscreen></iframe>
 
-Make sure you have the libraries installed:
+But what if I told you that the Montecchi and Cappelletti of gradient free optimization work suprisingly well in tandem?
+
+## Background: gradient-free optimization
+
+Consider the task of finding the minimum of a function without any access to it's derivative:
+
+Here's the function:
+
+\\[
+O(x) = sin x + sin 10x - 0.01x^2
+\\]
+
+Yes, the mathematically gifted members of the audeince have probably already derived the gradient of the function analycally. However, a lot of functions we would like to optimize in real life (phone battery life, travel time, [QALYs](https://en.wikipedia.org/wiki/Quality-adjusted_life_year), profits) don't have a handy formula attached. So, for the sake of developing a useful methodology, we treat \\(O(x)\\) as fully opaque: the only way to learn something about \\(O(x)\\) is to query the values of \\(O(x)\\) for some \\(x\\)s.
+
+This function can also be represented in Python as
 
 
 ```python
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-sns.set_theme(style="darkgrid")
 ```
-
-Consider the task of finding the minimum of a simple function:
 
 
 ```python
@@ -30,7 +36,7 @@ def reward_f(x):
     return np.sin(x) + np.sin(x * 10) - 0.01 * x ** 2
 ```
 
-We're allowed to query the values of the function for any x, but (please pretend for the sake of the argument that) we don't have access to it's derivative
+and visualised
 
 
 ```python
@@ -40,15 +46,18 @@ max_x = 10
 
 
 ```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set_theme(style="darkgrid")
+```
+
+
+```python
 plot_x = np.linspace(min_x, max_x, 1000)
 plot_y = reward_f(plot_x)
 
-sns.lineplot(plot_x, plot_y)
+sns.lineplot(x=plot_x, y=plot_y)
 ```
-
-    /home/vadim0x60/.pyenv/versions/3.9.5/lib/python3.9/site-packages/seaborn/_decorators.py:36: FutureWarning: Pass the following variables as keyword args: x, y. From version 0.12, the only valid positional argument will be `data`, and passing other arguments without an explicit keyword will result in an error or misinterpretation.
-      warnings.warn(
-
 
 
 
@@ -59,18 +68,32 @@ sns.lineplot(plot_x, plot_y)
 
 
     
-![png](output_7_2.png)
+![png](output_14_1.png)
     
 
 
+The goal is to find \\(\\arg\\max\_{x \\in [-10; 10]} O(x)\\)
+
 ## Evolutionary approach
+
+The evolutionary approach will be as follows.
+
+Start with an intitial population of 2 instances of \\(x\\)
 
 
 ```python
-xs = []
-rs = []
-rs_exp = []
+xs = [min_x, max_x]
+rs = [reward_f(min_x), reward_f(max_x)]
+rs_exp = [np.exp(reward_f(min_x)), np.exp(reward_f(max_x))]
 ```
+
+At every iteration of the evolutionary algorithm, draw \\(x\_1\\) and \\(x\_2\\) from the exponential reward distribution:
+
+\\[
+p(x) \\sim e^{O(x)}
+\\]
+
+And add \\(\\frac{x\_1 + x\_2}{2}\\) to the population
 
 
 ```python
@@ -84,17 +107,26 @@ def genetic_step():
     rs_exp.append(np.exp(new_r))
 ```
 
+Repeat for 10000 iterations
+
 
 ```python
-xs = [min_x, max_x]
-rs = [reward_f(min_x), reward_f(max_x)]
-rs_exp = [np.exp(reward_f(min_x)), np.exp(reward_f(max_x))]
+from tqdm.notebook import tqdm
+```
 
-for _ in range(10000):
+
+```python
+for _ in tqdm(range(10000), leave=False):
     genetic_step()
     
 best_idx = np.argmax(rs)
 ```
+
+
+      0%|          | 0/10000 [00:00<?, ?it/s]
+
+
+From the resulting population of 10002 pick \\(x\\) with the maximal \\(O(x)\\)
 
 
 ```python
@@ -111,7 +143,7 @@ xs[best_idx], rs[best_idx]
 
 
 
-    (1.4150118827819824, 1.9677836634587074)
+    (-4.921875, 1.6016821579235703)
 
 
 
@@ -122,10 +154,6 @@ sns.scatterplot(x=xs, y=rs, hue=range(len(xs)))
 sns.scatterplot(x=[xs[best_idx]], y=[rs[best_idx]], marker='x', s=300)
 ```
 
-    /home/vadim0x60/.pyenv/versions/3.9.5/lib/python3.9/site-packages/seaborn/relational.py:651: UserWarning: You passed a edgecolor/edgecolors ('w') for an unfilled marker ('x').  Matplotlib is ignoring the edgecolor in favor of the facecolor.  This behavior may change in the future.
-      points = ax.scatter(*args, **kws)
-
-
 
 
 
@@ -135,13 +163,13 @@ sns.scatterplot(x=[xs[best_idx]], y=[rs[best_idx]], marker='x', s=300)
 
 
     
-![png](output_14_2.png)
+![png](output_26_1.png)
     
 
 
-## Neural approach
+## Neural Actor-Critic approach
 
-Learn a mapping from the normal distribution to high reward distribution and sample from it
+The deep learning approach would be to train a _critic_ neural network \\(\\hat{O}\_{\\phi}(x)\\) to mimic \\(O(x)\\) as closely as possible. Then all we need is a second neural network that represents a probability distribution of \\(x\\)s that have a high \\(O(x)\\) and sample from it. It is called the _actor_ network, \\(x\_{\\phi}(z)\\), representing a mapping from the normal distribution to the distribution of points with high \\(O(x)\\). See [actor-critic methods](http://incompleteideas.net/book/first/ebook/node66.html) in Reinforcement Learning.
 
 
 ```python
@@ -167,6 +195,17 @@ critic = nn.Sequential(
 )
 critic_opt = torch.optim.Adam(critic.parameters())
 ```
+
+We start with an empty population
+
+
+```python
+xs = []
+rs = []
+rs_exp = []
+```
+
+At every step, we sample \\(z\\) from \\(N(0,1)\\), add \\(x\_{\\phi}(z)\\) to the population and update both \\(\\hat{O}\_{\\phi}(x)\\) and \\(x\_{\\phi}(z)\\).
 
 
 ```python
@@ -199,15 +238,15 @@ def neural_step():
 
 
 ```python
-xs = []
-rs = []
-rs_exp = []
-
-for _ in range(10000):
+for _ in tqdm(range(10000), leave=False):
     neural_step()
     
 best_idx = np.argmax(rs)
 ```
+
+
+      0%|          | 0/10000 [00:00<?, ?it/s]
+
 
 
 ```python
@@ -225,10 +264,6 @@ sns.lineplot(x=plot_x, y=critic_rs)
 plt.ylim(-3, 3)
 ```
 
-    /home/vadim0x60/.pyenv/versions/3.9.5/lib/python3.9/site-packages/seaborn/relational.py:651: UserWarning: You passed a edgecolor/edgecolors ('w') for an unfilled marker ('x').  Matplotlib is ignoring the edgecolor in favor of the facecolor.  This behavior may change in the future.
-      points = ax.scatter(*args, **kws)
-
-
 
 
 
@@ -238,7 +273,7 @@ plt.ylim(-3, 3)
 
 
     
-![png](output_20_2.png)
+![png](output_35_1.png)
     
 
 
@@ -251,12 +286,16 @@ rs = []
 rs_exp = []
 
 neural_step()
-for _ in range(10000):
+for _ in tqdm(range(10000), leave=False):
     neural_step()
     genetic_step()
     
 best_idx = np.argmax(rs)
 ```
+
+
+      0%|          | 0/10000 [00:00<?, ?it/s]
+
 
 
 ```python
@@ -267,10 +306,6 @@ sns.lineplot(x=plot_x, y=critic_rs)
 plt.ylim(-3, 3)
 ```
 
-    /home/vadim0x60/.pyenv/versions/3.9.5/lib/python3.9/site-packages/seaborn/relational.py:651: UserWarning: You passed a edgecolor/edgecolors ('w') for an unfilled marker ('x').  Matplotlib is ignoring the edgecolor in favor of the facecolor.  This behavior may change in the future.
-      points = ax.scatter(*args, **kws)
-
-
 
 
 
@@ -280,11 +315,12 @@ plt.ylim(-3, 3)
 
 
     
-![png](output_23_2.png)
+![png](output_38_1.png)
     
 
 
+One can see that in the hybrid neural-genetic mode, the search process zeros in on the maximum really fast and finds it within 4000 iterations, faster than both pure neural and pure genetic approaches 
 
-```python
+## Going beyond this simple example
 
-```
+This idea can be applied to any gradient-free optimization task. If you would like to see this idea taken to its logical conclusion and used to optimize a truly complicated opaque reward fucntion, see [this paper by a truly brilliant group of authors applying it to the task of program synthesis](https://arxiv.org/pdf/2102.04231.pdf)
