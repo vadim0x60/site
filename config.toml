@@ -45,8 +45,18 @@ pygmentscodefencesguesssyntax = true
 [[params.social]]
   name = "Github"
   icon = "fa fa-github fa-2x"
-  weight = 1
+  weight = 2
   url = "https://github.com/vadim0x60"
+[[params.social]]
+  name = "Telegram"
+  icon = "fa fa-telegram fa-2x"
+  weight = 2
+  url = "https://t.me/vadim0x60"
+[[params.social]]
+  name = "Google Scholar"
+  icon = "fa fa-google fa-2x"
+  weight = 2
+  url = "https://www.linkedin.com/in/vadim-liventsev-6b56b9196/"
 
 # Menu links
 [[menu.main]]
