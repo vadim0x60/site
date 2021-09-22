@@ -56,7 +56,7 @@ pygmentscodefencesguesssyntax = true
   name = "Google Scholar"
   icon = "fa fa-google fa-2x"
   weight = 2
-  url = "https://www.linkedin.com/in/vadim-liventsev-6b56b9196/"
+  url = "https://scholar.google.com/citations?user=tpB0Uw8AAAAJ"
 
 [markup.goldmark.renderer]
 unsafe = true
