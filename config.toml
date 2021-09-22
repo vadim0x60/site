@@ -58,6 +58,9 @@ pygmentscodefencesguesssyntax = true
   weight = 2
   url = "https://www.linkedin.com/in/vadim-liventsev-6b56b9196/"
 
+[markup.goldmark.renderer]
+unsafe = true
+
 # Menu links
 [[menu.main]]
   name = "Blog"
