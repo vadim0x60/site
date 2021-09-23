@@ -6,7 +6,7 @@ defaultcontentlanguage = "en"
 
 paginate = 20
 
-pygmentsstyle = "bw"
+pygmentsstyle = "monokai"
 pygmentscodefences = true
 pygmentscodefencesguesssyntax = true
 
@@ -65,10 +65,6 @@ unsafe = true
 
 # Menu links
 [[menu.main]]
-  name = "Blog"
+  name = "Posts"
   weight = 1
   url  = "posts/"
-[[menu.main]]
-  name = "About"
-  weight = 2
-  url = "about/"
