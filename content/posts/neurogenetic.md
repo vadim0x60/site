@@ -21,7 +21,7 @@ Here's the function:
 O(x) = sin x + sin 10x - 0.01x^2
 \\]
 
-Yes, the mathematically gifted members of the audeince have probably already derived the gradient of the function analycally. However, a lot of functions we would like to optimize in real life (phone battery life, travel time, [QALYs](https://en.wikipedia.org/wiki/Quality-adjusted_life_year), profits) don't have a handy formula attached. So, for the sake of developing a useful methodology, we treat \\(O(x)\\) as fully opaque: the only way to learn something about \\(O(x)\\) is to query the values of \\(O(x)\\) for some \\(x\\)s.
+Yes, the mathematically gifted members of the audeince have probably already derived the gradient of the function analytically. However, a lot of functions we would like to optimize in real life (phone battery life, travel time, [QALYs](https://en.wikipedia.org/wiki/Quality-adjusted_life_year), profits) don't have a handy formula attached. So, for the sake of developing a useful methodology, we treat \\(O(x)\\) as fully opaque: the only way to learn something about \\(O(x)\\) is to query the values of \\(O(x)\\) for some \\(x\\)s.
 
 This function can also be represented in Python as
 
@@ -72,11 +72,9 @@ sns.lineplot(x=plot_x, y=plot_y)
     
 
 
-The goal is to find \\(\\arg\\max\_{x \\in [-10; 10]} O(x)\\)
+The goal is to find \\(\\arg\\max\_x O(x)\\)
 
 ## Evolutionary approach
-
-The evolutionary approach will be as follows.
 
 Start with an intitial population of 2 instances of \\(x\\)
 
@@ -118,34 +116,16 @@ from tqdm.notebook import tqdm
 ```python
 for _ in tqdm(range(10000), leave=False):
     genetic_step()
-    
-best_idx = np.argmax(rs)
 ```
-
-
-      0%|          | 0/10000 [00:00<?, ?it/s]
-
 
 From the resulting population of 10002 pick \\(x\\) with the maximal \\(O(x)\\)
 
 
 ```python
-xs = np.array(xs)
-rs = np.array(rs)
-rs_exp = np.array(rs_exp)
+best_idx = np.argmax(rs)
 ```
 
-
-```python
-xs[best_idx], rs[best_idx]
-```
-
-
-
-
-    (-4.921875, 1.6016821579235703)
-
-
+By generating new solutions as modifications of existing successful solutions we focus the search on the most promising part of the search space. The visualisation below shows the history of the search, note that the darker colored points were added to the population after the light colored ones. The cross denotes the final solution.
 
 
 ```python
@@ -167,9 +147,17 @@ sns.scatterplot(x=[xs[best_idx]], y=[rs[best_idx]], marker='x', s=300)
     
 
 
+One can see that 10000 iterations were not enough to find the highest peak, although the one we finally found is close. Most of the iterations were spent navigating the far left part of the search space. The right half of the search space remained unexplored - the rightmost solution \\(x\_\\text{right}\\) has an \\(O(x\_\\text{right})=-2\\) which means it's almost never drawn from \\(p(x)\\). This could be mitigated by a number of tricks, for instance, adding a temperature parameter to \\(p(x)\\):
+
+\\[
+p\_t(x) \\sim e^{tO(x)}
+\\]
+
+but the issue is fundamenal to evolutionary algorithms - a few unrepresentative examples can erroneously exclude a large part of the search space.
+
 ## Neural Actor-Critic approach
 
-The deep learning approach would be to train a _critic_ neural network \\(\\hat{O}\_{\\phi}(x)\\) to mimic \\(O(x)\\) as closely as possible. Then all we need is a second neural network that represents a probability distribution of \\(x\\)s that have a high \\(O(x)\\) and sample from it. It is called the _actor_ network, \\(x\_{\\phi}(z)\\), representing a mapping from the normal distribution to the distribution of points with high \\(O(x)\\). See [actor-critic methods](http://incompleteideas.net/book/first/ebook/node66.html) in Reinforcement Learning.
+In the deep learning approach we train a _critic_ neural network \\(\\hat{O}\_{\\phi}(x)\\) to mimic \\(O(x)\\) as closely as possible. Then all we need is a second neural network that represents a probability distribution of \\(x\\)s that have a high \\(O(x)\\) and sample from it. It is called the _actor_ network, \\(x\_{\\phi}(z)\\), representing a mapping from the normal distribution to the distribution of points with high \\(O(x)\\). See [actor-critic methods](http://incompleteideas.net/book/first/ebook/node66.html) in Reinforcement Learning.
 
 
 ```python
@@ -273,7 +261,7 @@ plt.ylim(-3, 3)
 
 
     
-![png](output_35_1.png)
+![png](output_36_1.png)
     
 
 
@@ -315,7 +303,7 @@ plt.ylim(-3, 3)
 
 
     
-![png](output_38_1.png)
+![png](output_39_1.png)
     
 
 
@@ -323,4 +311,4 @@ One can see that in the hybrid neural-genetic mode, the search process zeros in 
 
 ## Going beyond this simple example
 
-This idea can be applied to any gradient-free optimization task. If you would like to see this idea taken to its logical conclusion and used to optimize a truly complicated opaque reward fucntion, see [this paper by a truly brilliant group of authors applying it to the task of program synthesis](https://arxiv.org/pdf/2102.04231.pdf)
+A simple \\(O(x):R \\rightarrow R\\) was used to make the illustration as clear and simple as possible. The principle can be applied to any gradient-free optimization task, including complex search spaces where the domain of \\(O(x)\\) is images, texts or, say, trading strategies. See [this paper by a truly brilliant group of authors applying it to the task of program synthesis](https://arxiv.org/pdf/2102.04231.pdf)
